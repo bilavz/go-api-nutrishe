@@ -45,6 +45,25 @@ type Claims struct {
 
 var jwtKey = []byte(os.Getenv("JWT_KEY"))
 
+// DailyLogRequest represents the request payload for the daily log
+type DailyLogRequest struct {
+	UserID     string `json:"user_id"`
+	SymptomsID string `json:"symptoms_id"`
+}
+
+// CreateDietPlanRequest represents the request payload for creating a diet plan
+type CreateDietPlanRequest struct {
+	UserID      string `json:"user_id"`
+	Description string `json:"description"`
+	CalorieGoal int    `json:"calorie_goal"`
+}
+
+// CalorieRequest represents the request payload for calculating calories
+type CalorieRequest struct {
+	UserID string `json:"user_id"`
+	Date   string `json:"date"`
+}
+
 // Register handles user registration
 func Register(w http.ResponseWriter, r *http.Request) {
 	var creds RegisterCredentials
@@ -149,4 +168,112 @@ func JWTMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func respondJSON(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if data != nil {
+		json.NewEncoder(w).Encode(data)
+	}
+}
+
+// CreateDietPlan handles creating a new diet plan
+func CreateDietPlan(w http.ResponseWriter, r *http.Request) {
+	var req CreateDietPlanRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondJSON(w, http.StatusBadRequest, map[string]string{"message": "Bad request"})
+		return
+	}
+
+	if req.UserID == "" {
+		respondJSON(w, http.StatusBadRequest, map[string]string{"message": "UserID is required"})
+		return
+	}
+
+	dietPlan := models.DietPlan{
+		PlanID:      generateID(), // Assume a function to generate unique IDs
+		UserID:      req.UserID,
+		StartDate:   time.Now(),
+		EndDate:     time.Now().AddDate(0, 1, 0), // Assuming a default one month duration
+		CalorieGoal: req.CalorieGoal,
+	}
+
+	db := models.GetDB()
+	query := "INSERT INTO diet_plan (PlanID, UserID, StartDate, EndDate, CalorieGoal) VALUES (?, ?, ?, ?, ?)"
+	_, err := db.Exec(query, dietPlan.PlanID, dietPlan.UserID, dietPlan.StartDate, dietPlan.EndDate, dietPlan.CalorieGoal)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]string{"message": "Error creating diet plan", "error": err.Error()})
+		return
+	}
+
+	respondJSON(w, http.StatusCreated, dietPlan)
+}
+
+// CalculateCalories handles calculating the calories for a given date
+func CalculateCalories(w http.ResponseWriter, r *http.Request) {
+	var req CalorieRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondJSON(w, http.StatusBadRequest, map[string]string{"message": "Bad request"})
+		return
+	}
+
+	if req.UserID == "" {
+		respondJSON(w, http.StatusBadRequest, map[string]string{"message": "UserID is required"})
+		return
+	}
+
+	var totalCalories int
+	db := models.GetDB()
+	query := "SELECT SUM(total_calories) FROM daily_meal WHERE user_id = ? AND meal_date = ?"
+	err := db.QueryRow(query, req.UserID, req.Date).Scan(&totalCalories)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]string{"message": "Error calculating calories", "error": err.Error()})
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]int{"total_calories": totalCalories})
+}
+
+// ViewCaloriesGoal handles viewing the calorie goal for a user
+func ViewCaloriesGoal(w http.ResponseWriter, r *http.Request) {
+	userID := r.URL.Query().Get("user_id")
+	if userID == "" {
+		respondJSON(w, http.StatusBadRequest, map[string]string{"message": "UserID is required"})
+		return
+	}
+
+	var calorieGoal int
+	db := models.GetDB()
+	query := "SELECT CalorieGoal FROM dietplan WHERE UserID = ? ORDER BY EndDate DESC LIMIT 1"
+	err := db.QueryRow(query, userID).Scan(&calorieGoal)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]string{"message": "Error retrieving diet plan", "error": err.Error()})
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]int{"calorie_goal": calorieGoal})
+}
+
+// ViewMonthlyCalories handles viewing the total calories for the current month
+func ViewMonthlyCalories(w http.ResponseWriter, r *http.Request) {
+	userID := r.URL.Query().Get("user_id")
+	if userID == "" {
+		respondJSON(w, http.StatusBadRequest, map[string]string{"message": "UserID is required"})
+		return
+	}
+
+	startOfMonth := time.Now().AddDate(0, 0, -time.Now().Day()+1)
+	endOfMonth := startOfMonth.AddDate(0, 1, -1)
+
+	var totalCalories int
+	db := models.GetDB()
+	query := "SELECT SUM(total_calories) FROM daily_meal WHERE user_id = ? AND meal_date BETWEEN ? AND ?"
+	err := db.QueryRow(query, userID, startOfMonth, endOfMonth).Scan(&totalCalories)
+	if err != nil {
+		respondJSON(w, http.StatusInternalServerError, map[string]string{"message": "Error calculating monthly calories", "error": err.Error()})
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]int{"total_calories": totalCalories})
 }
