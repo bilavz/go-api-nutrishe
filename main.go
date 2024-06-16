@@ -26,7 +26,7 @@ func main() {
 	mux.HandleFunc("/checkin", nabila.Checkin)
 
 	// Start the HTTP server
-	port := ":8080"
+	port := ":8081"
 	log.Printf("Starting server on port %s", port)
 	err = http.ListenAndServe(port, mux)
 	if err != nil {
