@@ -1,7 +1,10 @@
 package models
 
 import (
+	"database/sql"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Cycle represents the cycle table
@@ -80,4 +83,43 @@ type User struct {
 	Birthdate time.Time `json:"birthdate"`
 	Height    float32   `json:"height"`
 	Weight    float32   `json:"weight"`
+}
+
+func CreateUser(db *sql.DB, userID, name, username, email, password string, birthdate time.Time, height, weight float32) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	query := `INSERT INTO users (UserID, name, username, email, passwords, birthdate, height, weight) 
+	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+	_, err = db.Exec(query, userID, name, username, email, hashedPassword, birthdate, height, weight)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetUserByEmail(db *sql.DB, email string) (*User, error) {
+	query := "SELECT UserID, Name, Username, Email, Passwords, Birthdate, Height, Weight FROM users WHERE Email = ?"
+	row := db.QueryRow(query, email)
+
+	var user User
+	var birthdateStr string
+	err := row.Scan(&user.UserID, &user.Name, &user.Username, &user.Email, &user.Passwords, &birthdateStr, &user.Height, &user.Weight)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // Pengguna tidak ditemukan
+		}
+		return nil, err // Kesalahan lainnya
+	}
+
+	// Konversi string ke time.Time
+	user.Birthdate, err = time.Parse("2006-01-02", birthdateStr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }

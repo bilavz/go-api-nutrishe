@@ -2,15 +2,24 @@ package main
 
 import (
 	// "go-api-nutrishe/controllers/nabila"
+
 	"log"
 	"net/http"
 	"nutrishe/controllers/nabila"
 	"nutrishe/models"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load environment variables
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading environment variables: %v", err)
+	}
+
 	// Setup database
-	err := models.Setup()
+	err = models.Setup()
 	if err != nil {
 		log.Fatalf("Failed to set up database: %v", err)
 	}
@@ -23,7 +32,8 @@ func main() {
 		w.Write([]byte("OK"))
 	})
 
-	mux.HandleFunc("/checkin", nabila.Checkin)
+	mux.HandleFunc("/register", nabila.Register)
+	mux.HandleFunc("/login", nabila.Login)
 
 	// Start the HTTP server
 	port := ":8081"
@@ -33,3 +43,13 @@ func main() {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
+
+// func loadEnv() error {
+// 	// Simulasi membaca environment variable, sebaiknya gunakan library seperti godotenv untuk membaca file .env
+// 	jwtKey := os.Getenv("JWT_KEY")
+// 	if jwtKey == "" {
+// 		return fmt.Errorf("JWT_KEY environment variable not set")
+// 	}
+
+// 	return nil
+// }
