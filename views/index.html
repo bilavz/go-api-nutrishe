@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>plis bisa</title>
+</head>
+
+<style>
+.textTest{
+    white-space: pre-line;
+}
+</style>
+
+<body>
+    <form action="/" method="POST">
+        <h3>Would you like sum healthy fuds reccommendastion?</h3>
+
+        <label for="level">experience level?</label>
+        <input type="text" name="level" autocomplete="off" id="level">
+
+        <input type="hidden" value="recommend" name="action">
+        <button type="submit">yes pls!</button>
+    </form>
+
+    <form action="/" method="POST">
+        <h3>meal plan pls.</h3>
+        <!-- <label for="weight">How many kgs?</label>
+        <input type="text" name="weightGoal" autocomplete="off" id="weight">
+
+        <label for="dayCount">In how many days?</label>
+        <input type="text" name="days" autocomplete="off" id="dayCount"> -->
+
+        <input type="hidden" value="dietPlan" name="action">
+        <button type="submit">generate plan!</button>
+    </form>
+
+    <!-- <form action="/" method="POST">
+        <input type="text" name="prompt" autocomplete="off">
+        <input type="hidden" value="recommend" name="action">
+        <button type="submit">generate!</button>
+    </form> -->
+
+
+    <h2>AI answered: </h2>
+    <div class="textTest">
+        <h3>{{.data}}</h3>
+    </div>
+
+</body>
+</html>

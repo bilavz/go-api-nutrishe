@@ -3,10 +3,12 @@ package main
 import (
 	// "go-api-nutrishe/controllers/nabila"
 
+	"fmt"
 	"log"
 	"net/http"
 	"nutrishe/controllers/nabila"
 	"nutrishe/models"
+	"os"
 
 	"github.com/joho/godotenv"
 )
@@ -48,12 +50,12 @@ func main() {
 	}
 }
 
-// func loadEnv() error {
-// 	// Simulasi membaca environment variable, sebaiknya gunakan library seperti godotenv untuk membaca file .env
-// 	jwtKey := os.Getenv("JWT_KEY")
-// 	if jwtKey == "" {
-// 		return fmt.Errorf("JWT_KEY environment variable not set")
-// 	}
+func loadEnv() error {
+	// Simulasi membaca environment variable, sebaiknya gunakan library seperti godotenv untuk membaca file .env
+	jwtKey := os.Getenv("JWT_KEY")
+	if jwtKey == "" {
+		return fmt.Errorf("JWT_KEY environment variable not set")
+	}
 
-// 	return nil
-// }
+	return nil
+}
