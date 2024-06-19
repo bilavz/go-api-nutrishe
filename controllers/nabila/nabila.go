@@ -2,6 +2,7 @@ package nabila
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"nutrishe/models"
 	"os"
@@ -66,12 +67,14 @@ type CalorieRequest struct {
 
 // Register handles user registration
 func Register(w http.ResponseWriter, r *http.Request) {
+	log.Println("register cuy")
 	var creds RegisterCredentials
 	err := json.NewDecoder(r.Body).Decode(&creds)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	log.Println("register cuyk")
 
 	// Parse birthdate
 	birthdate, err := time.Parse("2006-01-02", creds.Birthdate)
@@ -81,6 +84,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := generateID()
+	log.Println("register cuyvcx")
 
 	db := models.GetDB()
 	err = models.CreateUser(db, userID, creds.Name, creds.Username, creds.Email, creds.Password, birthdate, creds.Height, creds.Weight)

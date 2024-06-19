@@ -6,7 +6,12 @@ import (
 	"log"
 	"net/http"
 	"nutrishe/controllers/april"
+
+	"nutrishe/controllers/artikel"
+	"nutrishe/controllers/mealtrackcontroller"
 	"nutrishe/controllers/nabila"
+	"nutrishe/controllers/recommendmeals"
+
 	"nutrishe/models"
 
 	"github.com/joho/godotenv"
@@ -46,6 +51,13 @@ func main() {
 
 	// Enable CORS
     handler := cors.Default().Handler(mux)
+
+	mux.HandleFunc("/add_meal", mealtrackcontroller.AddMeal)
+	mux.HandleFunc("/viewTest", mealtrackcontroller.ViewMealsTest)
+
+	mux.HandleFunc("/recommend_meals", recommendmeals.RecommendMeals)
+
+	mux.HandleFunc("/search_articles", artikel.SearchArticles)
 
 	// Start the HTTP server
 	port := ":8081"

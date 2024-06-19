@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -91,10 +92,12 @@ func CreateUser(db *sql.DB, userID, name, username, email, password string, birt
 	if err != nil {
 		return err
 	}
+	log.Println("register cuylplplpl")
 
 	query := `INSERT INTO users (UserID, name, username, email, passwords, birthdate, height, weight) 
 	          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 	_, err = db.Exec(query, userID, name, username, email, hashedPassword, birthdate, height, weight)
+	log.Println(userID, name, username, email, hashedPassword, birthdate, height, weight)
 	if err != nil {
 		return err
 	}
