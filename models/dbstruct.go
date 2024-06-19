@@ -2,6 +2,8 @@ package models
 
 import (
 	"database/sql"
+	"fmt"
+	"strconv"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -56,7 +58,6 @@ type Food struct {
 type MealDetail struct {
 	TrackID  string    `json:"track_id" gorm:"type:char(5);primaryKey"`
 	FoodID   string    `json:"food_id" gorm:"type:char(5);primaryKey"`
-	MealTime time.Time `json:"meal_time"`
 }
 
 // Migration represents the migrations table
@@ -122,4 +123,35 @@ func GetUserByEmail(db *sql.DB, email string) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+func GenerateSequentialTrackID() (string, error) {
+    db := GetDB()
+
+    var maxID sql.NullString
+    query := "SELECT MAX(TrackID) FROM daily_meal"
+    err := db.QueryRow(query).Scan(&maxID)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            // No rows in table, start with TR0001
+            return "TR001", nil
+        }
+        return "", err
+    }
+
+    if !maxID.Valid || maxID.String == "" {
+        return "TR001", nil
+    }
+
+    // Extract the numeric part and increment it
+    numericPart := maxID.String[2:] // Remove "TR" prefix
+    number, err := strconv.Atoi(numericPart)
+    if err != nil {
+        return "", err
+    }
+
+    nextNumber := number + 1
+    nextID := fmt.Sprintf("TR%03d", nextNumber)
+
+    return nextID, nil
 }

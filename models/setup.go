@@ -45,7 +45,7 @@ import (
 var db *sql.DB
 
 func Setup() error {
-	dsn := "root:@tcp(127.0.0.1:3306)/empowher"
+	dsn := "root:@tcp(192.168.1.7:3306)/nutrishe"
 
 	var err error
 	db, err = sql.Open("mysql", dsn)

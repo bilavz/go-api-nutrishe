@@ -5,10 +5,12 @@ import (
 
 	"log"
 	"net/http"
+	"nutrishe/controllers/april"
 	"nutrishe/controllers/nabila"
 	"nutrishe/models"
 
 	"github.com/joho/godotenv"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -28,7 +30,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Define routes
-	mux.HandleFunc("/empowher", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/nutrishe", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
 	})
 
@@ -38,11 +40,17 @@ func main() {
 	mux.HandleFunc("/calculate_calories", nabila.CalculateCalories)
 	mux.HandleFunc("/calories_goal", nabila.ViewCaloriesGoal)
 	mux.HandleFunc("/monthly_calories", nabila.ViewMonthlyCalories)
+	mux.HandleFunc("/dailymeal", april.LogMeal)
+	mux.HandleFunc("/food", april.GetFoodList)
+	mux.HandleFunc("/mealdetail", april.GetMealsByDate)
+
+	// Enable CORS
+    handler := cors.Default().Handler(mux)
 
 	// Start the HTTP server
 	port := ":8081"
 	log.Printf("Starting server on port %s", port)
-	err = http.ListenAndServe(port, mux)
+	err = http.ListenAndServe(port, handler)
 	if err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}

@@ -90,6 +90,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("User created successfully"))
 }
 
 // Login handles user login
@@ -122,6 +123,18 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	// Include additional user data in response
+	response := map[string]interface{}{
+		"user_id":   user.UserID,
+		"name":      user.Name,
+		"username":  user.Username,
+		"email":     user.Email,
+		"birthdate": user.Birthdate.Format("2006-01-02"), // Format birthdate as string
+		"height":    user.Height,
+		"weight":    user.Weight,
+		"token":     "", // Placeholder for token
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
@@ -129,13 +142,19 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:    "token",
-		Value:   tokenString,
-		Expires: expirationTime,
-	})
+	// http.SetCookie(w, &http.Cookie{
+	// 	Name:    "token",
+	// 	Value:   tokenString,
+	// 	Expires: expirationTime,
+	// })
 
-	w.Write([]byte(tokenString))
+	// w.Write([]byte(tokenString))
+	// Set token in the response
+	response["token"] = tokenString
+
+	// Respond with JSON containing user data and token
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 // generateID generates a unique ID for the user
