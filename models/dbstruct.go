@@ -86,6 +86,15 @@ type User struct {
 	Weight    float32   `json:"weight"`
 }
 
+type UserCalorie struct {
+	UserID   string  `json:"user_id"`
+	Age      int     `json:"age"`
+	Height   float64 `json:"height"`
+	Weight   float64 `json:"weight"`
+	Activity string  `json:"activity"`
+	Calories float64 `json:"calories"`
+}
+
 func CreateUser(db *sql.DB, userID, name, username, email, password string, birthdate time.Time, height, weight float32) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -125,4 +134,30 @@ func GetUserByEmail(db *sql.DB, email string) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+func SaveCalorieData(db *sql.DB, user_id string, age int, height, weight float64, activity string, calories float64) error {
+	query := `INSERT INTO users_calorie (UserID, Age, Height, Weight, Activity, Calories) VALUES (?, ?, ?, ?, ?, ?)`
+	_, err := db.Exec(query, user_id, age, height, weight, activity, calories)
+	return err
+}
+
+func GetCalorieByUserID(db *sql.DB, userID string) ([]UserCalorie, error) {
+	query := `SELECT UserID, Age, Height, Weight, Activity, Calories FROM users_calorie WHERE UserID = ?`
+	rows, err := db.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []UserCalorie
+	for rows.Next() {
+		var req UserCalorie
+		if err := rows.Scan(&req.UserID, &req.Age, &req.Height, &req.Weight, &req.Activity, &req.Calories); err != nil {
+			return nil, err
+		}
+		results = append(results, req)
+	}
+
+	return results, nil
 }

@@ -40,7 +40,7 @@ func main() {
 	mux.HandleFunc("/register", nabila.Register)
 	mux.HandleFunc("/login", nabila.Login)
 	mux.HandleFunc("/dietplan", nabila.CreateDietPlan)
-	mux.HandleFunc("/calculate_calories", nabila.CalculateCalories)
+	mux.HandleFunc("/calculate", nabila.CalculateCalories)
 	mux.HandleFunc("/calories_goal", nabila.ViewCaloriesGoal)
 	mux.HandleFunc("/monthly_calories", nabila.ViewMonthlyCalories)
 
