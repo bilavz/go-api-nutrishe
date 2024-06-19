@@ -14,9 +14,9 @@ type Food struct {
 	Name          string  `json:"name"`
 	Serving       int     `json:"serving"`
 	Calories      int     `json:"calories"`
-	Fat           float64 `json:"fat"`
-	Carbohydrates float64 `json:"carbohydrates"`
-	Protein       float64 `json:"protein"`
+	Fat           *float64 `json:"fat"`
+	Carbohydrates *float64 `json:"carbohydrates"`
+	Protein       *float64 `json:"protein"`
 	Fiber         *float64 `json:"fiber"`
 	Calcium       *int     `json:"calcium"`
 	Type          string  `json:"type"`
@@ -152,52 +152,75 @@ func LogMeal(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetFoodList(w http.ResponseWriter, r *http.Request) {
-	db := models.GetDB()
-	rows, err := db.Query("SELECT FoodID, Name, Serving, Calories, Fat, Carbohydrates, Protein, Fiber, Calcium, Type FROM food")
-	if err != nil {
-		http.Error(w, "Failed to retrieve food list: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer rows.Close()
+    db := models.GetDB()
+    rows, err := db.Query("SELECT FoodID, Name, Serving, Calories, Fat, Carbohydrates, Protein, Fiber, Calcium, Type FROM food")
+    if err != nil {
+        http.Error(w, "Failed to retrieve food list: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+    defer rows.Close()
 
     var foodsByType = make(map[string][]Food)
 
-	for rows.Next() {
+    for rows.Next() {
         var food Food
+        var fat, carbohydrates, protein, fiber sql.NullFloat64
         var calcium sql.NullInt64
-        var fiber sql.NullFloat64
-    
-        if err := rows.Scan(&food.FoodID, &food.Name, &food.Serving, &food.Calories, &food.Fat, &food.Carbohydrates, &food.Protein, &fiber, &calcium, &food.Type); err != nil {
+
+        if err := rows.Scan(&food.FoodID, &food.Name, &food.Serving, &food.Calories, &fat, &carbohydrates, &protein, &fiber, &calcium, &food.Type); err != nil {
             http.Error(w, "Failed to scan food item: "+err.Error(), http.StatusInternalServerError)
             return
         }
-    
+
+        if fat.Valid {
+            food.Fat = &fat.Float64
+        } else {
+            food.Fat = nil
+        }
+
+        if carbohydrates.Valid {
+            food.Carbohydrates = &carbohydrates.Float64
+        } else {
+            food.Carbohydrates = nil
+        }
+
+        if protein.Valid {
+            food.Protein = &protein.Float64
+        } else {
+            food.Protein = nil
+        }
+
         if fiber.Valid {
             food.Fiber = &fiber.Float64
         } else {
             food.Fiber = nil
         }
-    
+
         if calcium.Valid {
             calciumValue := int(calcium.Int64)
             food.Calcium = &calciumValue
         } else {
             food.Calcium = nil
         }
-    
+
         foodsByType[food.Type] = append(foodsByType[food.Type], food)
     }
-    
-    
 
-	if err := rows.Err(); err != nil {
-		http.Error(w, "Error iterating over rows: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
+    // Handle any errors encountered during iteration
+    if err := rows.Err(); err != nil {
+        http.Error(w, "Failed to iterate through food list: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(foodsByType)
+    // Marshal foodsByType to JSON and write response
+    jsonBytes, err := json.Marshal(foodsByType)
+    if err != nil {
+        http.Error(w, "Failed to marshal foodsByType to JSON: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.Write(jsonBytes)
 }
 
 func GetMealsByDate(w http.ResponseWriter, r *http.Request) {
