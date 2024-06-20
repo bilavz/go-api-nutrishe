@@ -6,12 +6,12 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 )
 
-const (
-	apiKey = "AIzaSyBG6ee5dKpxZ-0kHbAyzpG8WslqSzdWF_c"
-	cx     = "84161d7b25ebd4a92"
-)
+type SearchPrompt struct {
+	Query string `json:"Query"`
+}
 
 func respondJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
@@ -44,8 +44,17 @@ type SearchResult struct {
 }
 
 func SearchArticles(w http.ResponseWriter, r *http.Request) {
-	searchQuery := "Healthy food recommendation" //search query nya
-	maxResults := 5                              //maxnya mau brp artikel
+	log.Println("search artikel")
+
+	var data SearchPrompt
+	err := json.NewDecoder(r.Body).Decode(&data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	searchQuery := data.Query //search query nya
+	maxResults := 10          //maxnya mau brp artikel
 	searchResults, err := search(searchQuery, maxResults)
 	if err != nil {
 		log.Fatalf("Error performing search: %v", err)
@@ -69,8 +78,8 @@ func search(query string, maxResults int) (*SearchResult, error) {
 	}
 
 	q := u.Query()
-	q.Set("key", apiKey)
-	q.Set("cx", cx)
+	q.Set("key", os.Getenv("Custom_Search_API_KEY"))
+	q.Set("cx", os.Getenv("cx"))
 	q.Set("q", query)
 	q.Set("num", fmt.Sprintf("%d", maxResults))
 	u.RawQuery = q.Encode()

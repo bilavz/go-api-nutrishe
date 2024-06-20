@@ -48,16 +48,3 @@ func AddMeal(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 }
-
-func ViewMealsTest(w http.ResponseWriter, r *http.Request) {
-	log.Println("view meal")
-	var data entity.Food
-
-	db := models.GetDB()
-	data = models.ViewMeal(db)
-
-	log.Println(data)
-	respondJSON(w, http.StatusOK, data)
-
-	// w.WriteHeader(http.StatusCreated)
-}

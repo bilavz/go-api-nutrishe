@@ -61,26 +61,15 @@ type CreateDietPlanRequest struct {
 	CalorieGoal int       `json:"calorie_goal"`
 }
 
-// CalorieRequest represents the request payload for calculating calories
-// type CalorieRequest struct {
-// 	UserID   string  `json:"user_id"`
-// 	Age      int     `json:"age"`
-// 	Height   float64 `json:"height"`
-// 	Weight   float64 `json:"weight"`
-// 	Activity string  `json:"activity"`
-// 	Calories float64 `json:"calories"`
-// }
-
 // Register handles user registration
 func Register(w http.ResponseWriter, r *http.Request) {
-	log.Println("register cuy")
+	log.Println("register")
 	var creds RegisterCredentials
 	err := json.NewDecoder(r.Body).Decode(&creds)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Println("register cuyk")
 
 	// Parse birthdate
 	birthdate, err := time.Parse("2006-01-02", creds.Birthdate)
@@ -90,7 +79,6 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := generateID()
-	log.Println("register cuyvcx")
 
 	db := models.GetDB()
 	err = models.CreateUser(db, userID, creds.Name, creds.Username, creds.Email, creds.Password, birthdate, creds.Height, creds.Weight)
@@ -102,8 +90,8 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-// Login handles user login
 func Login(w http.ResponseWriter, r *http.Request) {
+	log.Println("login")
 	var creds Credentials
 	err := json.NewDecoder(r.Body).Decode(&creds)
 	if err != nil {
@@ -132,6 +120,18 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	// Include additional user data in response
+	response := map[string]interface{}{
+		"user_id":   user.UserID,
+		"name":      user.Name,
+		"username":  user.Username,
+		"email":     user.Email,
+		"birthdate": user.Birthdate.Format("2006-01-02"), // Format birthdate as string
+		"height":    user.Height,
+		"weight":    user.Weight,
+		"token":     "", // Placeholder for token
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(jwtKey)
 	if err != nil {
@@ -139,13 +139,27 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:    "token",
-		Value:   tokenString,
-		Expires: expirationTime,
-	})
+	response["token"] = tokenString
 
-	w.Write([]byte(tokenString))
+	// Respond with JSON containing user data and token
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// Logout handles user logout
+func Logout(w http.ResponseWriter, r *http.Request) {
+	// Remove the JWT token from cookies (assuming you're using cookies to store the token)
+	cookie := http.Cookie{
+		Name:     "jwt_token",
+		Value:    "",
+		Expires:  time.Now().Add(-1 * time.Hour), // Set expiration time to the past to delete the cookie
+		HttpOnly: true,
+		Path:     "/",
+	}
+	http.SetCookie(w, &cookie)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Logged out successfully"))
 }
 
 // generateID generates a unique ID for the user
@@ -227,6 +241,8 @@ func CalculateCalories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Println(req)
+
 	// Validasi input
 	if req.Age <= 0 || req.Height <= 0 || req.Weight <= 0 {
 		respondJSON(w, http.StatusBadRequest, map[string]string{"message": "Invalid input values"})
@@ -235,21 +251,6 @@ func CalculateCalories(w http.ResponseWriter, r *http.Request) {
 
 	// Hitung BMR untuk wanita
 	bmr := 447.593 + (9.247 * req.Weight) + (3.098 * req.Height) - (4.330 * float64(req.Age))
-	calories := 0.0
-
-	// switch req.Activity {
-	// case "Low Active":
-	// 	calories = bmr * 1.2
-	// case "Fairly Active":
-	// 	calories = bmr * 1.375
-	// case "Active":
-	// 	calories = bmr * 1.55
-	// case "Highly Active":
-	// 	calories = bmr * 1.725
-	// default:
-	// 	respondJSON(w, http.StatusBadRequest, map[string]string{"message": "Invalid activity level"})
-	// 	return
-	// }
 
 	var activityMultiplier float64
 	switch strings.ToLower(req.Activity) {
@@ -269,7 +270,6 @@ func CalculateCalories(w http.ResponseWriter, r *http.Request) {
 	}
 
 	Calories := bmr * activityMultiplier
-	req.Calories = Calories
 
 	// Koneksi ke database
 	db := models.GetDB()
@@ -277,7 +277,8 @@ func CalculateCalories(w http.ResponseWriter, r *http.Request) {
 		respondJSON(w, http.StatusInternalServerError, map[string]string{"message": "Database connection error"})
 		return
 	}
-	defer db.Close()
+
+	req.Calories = Calories
 
 	// Simpan data ke database
 	if err := models.SaveCalorieData(db, req.UserID, req.Age, req.Height, req.Weight, req.Activity, req.Calories); err != nil {
@@ -285,7 +286,7 @@ func CalculateCalories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, http.StatusOK, map[string]float64{"calories": calories})
+	respondJSON(w, http.StatusOK, map[string]float64{"calories": Calories})
 }
 
 func GetCalorieDataHandler(w http.ResponseWriter, r *http.Request) {

@@ -32,11 +32,6 @@ func RecommendMeals(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Print("1")
-
-	os.Setenv("API_KEY", "AIzaSyBe8wUJ5RsbBqPSJMtFKV5BnkcrF93u_8o")
-	log.Print("2")
-
 	// prompt: Generate a meal plan for ? day, ? calories each day, with calories for each meal. Specific to ? dishes.
 
 	//making prompt
@@ -46,7 +41,7 @@ func RecommendMeals(w http.ResponseWriter, r *http.Request) {
 	log.Print("prompt: ", prompt)
 
 	ctx := context.Background()
-	client, _ := genai.NewClient(ctx, option.WithAPIKey(os.Getenv("API_KEY")))
+	client, _ := genai.NewClient(ctx, option.WithAPIKey(os.Getenv("Genai_API_KEY")))
 
 	defer client.Close()
 

@@ -2,7 +2,9 @@ package models
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -134,6 +136,37 @@ func GetUserByEmail(db *sql.DB, email string) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+func GenerateSequentialTrackID() (string, error) {
+	db := GetDB()
+
+	var maxID sql.NullString
+	query := "SELECT MAX(TrackID) FROM daily_meal"
+	err := db.QueryRow(query).Scan(&maxID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// No rows in table, start with TR0001
+			return "TR001", nil
+		}
+		return "", err
+	}
+
+	if !maxID.Valid || maxID.String == "" {
+		return "TR001", nil
+	}
+
+	// Extract the numeric part and increment it
+	numericPart := maxID.String[2:] // Remove "TR" prefix
+	number, err := strconv.Atoi(numericPart)
+	if err != nil {
+		return "", err
+	}
+
+	nextNumber := number + 1
+	nextID := fmt.Sprintf("TR%03d", nextNumber)
+
+	return nextID, nil
 }
 
 func SaveCalorieData(db *sql.DB, user_id string, age int, height, weight float64, activity string, calories float64) error {

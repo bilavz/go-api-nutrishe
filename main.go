@@ -5,6 +5,7 @@ import (
 
 	"log"
 	"net/http"
+	"nutrishe/controllers/april"
 
 	"nutrishe/controllers/artikel"
 	"nutrishe/controllers/mealtrackcontroller"
@@ -33,7 +34,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Define routes
-	mux.HandleFunc("/empowher", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/nutrishe", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("OK"))
 	})
 
@@ -43,14 +44,17 @@ func main() {
 	mux.HandleFunc("/calculate", nabila.CalculateCalories)
 	mux.HandleFunc("/calories_goal", nabila.ViewCaloriesGoal)
 	mux.HandleFunc("/monthly_calories", nabila.ViewMonthlyCalories)
+	mux.HandleFunc("/dailymeal", april.LogMeal)
+	mux.HandleFunc("/food", april.GetFoodList)
+	mux.HandleFunc("/mealdetail", april.GetMealsByDate)
 
 	mux.HandleFunc("/add_meal", mealtrackcontroller.AddMeal)
-	mux.HandleFunc("/viewTest", mealtrackcontroller.ViewMealsTest)
 
 	mux.HandleFunc("/recommend_meals", recommendmeals.RecommendMeals)
 
 	mux.HandleFunc("/search_articles", artikel.SearchArticles)
 
+	mux.HandleFunc("/logout", nabila.Logout)
 	// Start the HTTP server
 	port := ":8081"
 	log.Printf("Starting server on port %s", port)
@@ -59,13 +63,3 @@ func main() {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
-
-// func loadEnv() error {
-// 	// Simulasi membaca environment variable, sebaiknya gunakan library seperti godotenv untuk membaca file .env
-// 	jwtKey := os.Getenv("JWT_KEY")
-// 	if jwtKey == "" {
-// 		return fmt.Errorf("JWT_KEY environment variable not set")
-// 	}
-
-// 	return nil
-// }
