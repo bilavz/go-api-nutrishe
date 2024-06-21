@@ -325,3 +325,84 @@ func GetMealsByDate(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
+
+func DeleteMealDetail(w http.ResponseWriter, r *http.Request) {
+	var mealReq DailyMealRequest
+	err := json.NewDecoder(r.Body).Decode(&mealReq)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	// Validate and parse the date
+	mealDate, err := time.Parse("2006-01-02", mealReq.MealDate)
+	if err != nil {
+		http.Error(w, "Invalid date format, please use YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	db := models.GetDB()
+	if db == nil {
+		http.Error(w, "Database connection is not initialized", http.StatusInternalServerError)
+		return
+	}
+
+	// Start transaction to ensure atomicity
+	tx, err := db.Begin()
+	if err != nil {
+		log.Printf("Failed to start transaction: %v", err)
+		http.Error(w, "Failed to start transaction", http.StatusInternalServerError)
+		return
+	}
+	defer func() {
+		if err != nil {
+			log.Printf("Transaction failed, rolling back: %v", err)
+			tx.Rollback()
+			http.Error(w, "Transaction failed", http.StatusInternalServerError)
+		}
+	}()
+
+	// Get TrackID from daily_meal table
+	var trackID string
+	query := "SELECT TrackID FROM daily_meal WHERE UserID = ? AND MealDate = ?"
+	err = tx.QueryRow(query, mealReq.UserID, mealDate).Scan(&trackID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "No meal found for the given date", http.StatusNotFound)
+		} else {
+			log.Printf("Failed to get TrackID: %v", err)
+			http.Error(w, "Failed to get TrackID", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Delete from meal_detail table
+	result, err := tx.Exec("DELETE FROM meal_detail WHERE TrackID = ? AND FoodID = ?", trackID, mealReq.FoodID)
+	if err != nil {
+		log.Printf("Failed to delete meal detail: %v", err)
+		return
+	}
+
+	// Check if any rows were affected
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Printf("Failed to get rows affected: %v", err)
+		http.Error(w, "Failed to delete meal detail", http.StatusInternalServerError)
+		return
+	}
+	if rowsAffected == 0 {
+		http.Error(w, "No matching meal detail found", http.StatusNotFound)
+		return
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		log.Printf("Failed to commit transaction: %v", err)
+		http.Error(w, "Failed to commit transaction", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with success
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Meal detail deleted successfully"})
+}

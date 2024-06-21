@@ -175,7 +175,15 @@ func SaveCalorieData(db *sql.DB, user_id string, age int, height, weight float64
 	return err
 }
 
+func formatFloat(num float64, precision int) float64 {
+	str := fmt.Sprintf("%.*f", precision, num)
+	formattedNum, _ := strconv.ParseFloat(str, 64)
+	return formattedNum
+}
+
 func GetCalorieByUserID(db *sql.DB, userID string) ([]UserCalorie, error) {
+	log.Println("tess")
+
 	query := `SELECT UserID, Age, Height, Weight, Activity, Calories FROM users_calorie WHERE UserID = ?`
 	rows, err := db.Query(query, userID)
 	if err != nil {
@@ -189,8 +197,10 @@ func GetCalorieByUserID(db *sql.DB, userID string) ([]UserCalorie, error) {
 		if err := rows.Scan(&req.UserID, &req.Age, &req.Height, &req.Weight, &req.Activity, &req.Calories); err != nil {
 			return nil, err
 		}
+
+		req.Calories = formatFloat(req.Calories, 2)
 		results = append(results, req)
 	}
-
+	log.Println(results)
 	return results, nil
 }

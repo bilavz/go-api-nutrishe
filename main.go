@@ -42,11 +42,12 @@ func main() {
 	mux.HandleFunc("/login", nabila.Login)
 	mux.HandleFunc("/dietplan", nabila.CreateDietPlan)
 	mux.HandleFunc("/calculate", nabila.CalculateCalories)
-	mux.HandleFunc("/calories_goal", nabila.ViewCaloriesGoal)
+	mux.HandleFunc("/calories_goal", nabila.GetCalorieDataHandler)
 	mux.HandleFunc("/monthly_calories", nabila.ViewMonthlyCalories)
 	mux.HandleFunc("/dailymeal", april.LogMeal)
 	mux.HandleFunc("/food", april.GetFoodList)
 	mux.HandleFunc("/mealdetail", april.GetMealsByDate)
+	mux.HandleFunc("/deletemealdetail", april.DeleteMealDetail)
 
 	mux.HandleFunc("/add_meal", mealtrackcontroller.AddMeal)
 

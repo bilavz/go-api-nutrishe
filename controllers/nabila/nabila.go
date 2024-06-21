@@ -290,8 +290,19 @@ func CalculateCalories(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetCalorieDataHandler(w http.ResponseWriter, r *http.Request) {
-	// Ambil userID dari parameter URL atau body request
-	userID := r.URL.Query().Get("user_id")
+	log.Println("get calories")
+
+	var requestBody struct {
+		UserID string `json:"user_id"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
+
+	userID := requestBody.UserID
 	if userID == "" {
 		http.Error(w, "Missing user_id", http.StatusBadRequest)
 		return
@@ -299,7 +310,10 @@ func GetCalorieDataHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Dapatkan koneksi ke database
 	db := models.GetDB()
-	defer db.Close() // Pastikan koneksi ditutup setelah digunakan
+	if db == nil {
+		http.Error(w, "Database connection is not initialized", http.StatusInternalServerError)
+		return
+	}
 
 	// Ambil data kalori berdasarkan userID
 	results, err := models.GetCalorieByUserID(db, userID)
@@ -310,12 +324,16 @@ func GetCalorieDataHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Encode hasil ke JSON dan kirim respons
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(results)
+	log.Println("res: ", results)
+	log.Println("cal: ", results[0].Calories)
+
+	json.NewEncoder(w).Encode(results[0].Calories)
 }
 
 // ViewCaloriesGoal handles viewing the calorie goal for a user
 func ViewCaloriesGoal(w http.ResponseWriter, r *http.Request) {
-	userID := r.URL.Query().Get("user_id")
+	// userID := r.URL.Query().Get("user_id")
+	userID := "US001"
 	if userID == "" {
 		respondJSON(w, http.StatusBadRequest, map[string]string{"message": "UserID is required"})
 		return
@@ -323,7 +341,7 @@ func ViewCaloriesGoal(w http.ResponseWriter, r *http.Request) {
 
 	var calorieGoal int
 	db := models.GetDB()
-	query := "SELECT CalorieGoal FROM dietplan WHERE UserID = ? ORDER BY EndDate DESC LIMIT 1"
+	query := "SELECT CalorieGoal FROM diet_plan WHERE UserID = ? ORDER BY EndDate DESC LIMIT 1"
 	err := db.QueryRow(query, userID).Scan(&calorieGoal)
 	if err != nil {
 		respondJSON(w, http.StatusInternalServerError, map[string]string{"message": "Error retrieving diet plan", "error": err.Error()})

@@ -62,8 +62,4 @@ func RecommendMeals(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondJSON(w, http.StatusOK, aiResponse)
-
-	// prompt: Generate healthy foods recommendation for people with an experience level of beginner, specified to Indonesian dishes, display calories for each food item
-	// prompt: Generate a meal plan for ? day, ? calories each day, with calories for each meal. Specific to ? dishes.
-
 }
